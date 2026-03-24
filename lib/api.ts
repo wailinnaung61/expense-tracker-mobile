@@ -1,6 +1,6 @@
 import { API_BASE_URL } from "@/constants/config";
+import { storage } from "@/lib/storage";
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
-import * as SecureStore from "expo-secure-store";
 
 export const STORAGE_KEYS = {
   ACCESS_TOKEN: "et_access_token",
@@ -18,13 +18,19 @@ const api = axios.create({
 // ── Request interceptor: attach Bearer token ──────────────────────────────────
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
-    const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+    console.log(
+      `📡 API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
+    );
+    const token = await storage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => {
+    console.error("❌ Request interceptor error:", error);
+    return Promise.reject(error);
+  },
 );
 
 // ── Response interceptor: handle 401 + token refresh ─────────────────────────
@@ -63,33 +69,33 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const refreshToken = await SecureStore.getItemAsync(
-          STORAGE_KEYS.REFRESH_TOKEN,
-        );
-        const username = await SecureStore.getItemAsync(STORAGE_KEYS.USERNAME);
+        const refreshToken = await storage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+        const username = await storage.getItem(STORAGE_KEYS.USERNAME);
 
         if (!refreshToken || !username) throw new Error("No credentials");
 
-        const { data } = await axios.post(`${API_BASE_URL}/auth/refresh`, {
+        const { data } = await axios.post(`${API_BASE_URL}/Auth/refresh`, {
           refreshToken,
           username,
         });
 
-        await SecureStore.setItemAsync(
-          STORAGE_KEYS.ACCESS_TOKEN,
-          data.accessToken,
-        );
+        await storage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
         api.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`;
         processQueue(null, data.accessToken);
         original.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(original);
       } catch (err) {
         processQueue(err, null);
+        // Clear tokens on refresh failure
         await Promise.all(
           Object.values(STORAGE_KEYS).map((k) =>
-            SecureStore.deleteItemAsync(k),
+            storage.deleteItem(k).catch(() => {
+              // Ignore deletion errors
+            }),
           ),
-        );
+        ).catch(() => {
+          // Ignore Promise.all errors
+        });
         return Promise.reject(err);
       } finally {
         isRefreshing = false;

@@ -35,16 +35,33 @@ export default function SignInScreen() {
     }
     setLoading(true);
     try {
+      console.log("🔄 Starting sign-in...");
       const result = await signIn(form.usernameOrEmail.trim(), form.password);
       if (result.requiresMfa) {
         Alert.alert("MFA Required", "Please complete MFA verification.");
       }
       // Navigation handled by root layout auth guard
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message ?? "Sign in failed. Please try again.";
-      Alert.alert("Error", msg);
+      console.error("❌ Sign-in error caught:", err);
+      const axiosError = err as {
+        response?: {
+          status?: number;
+          data?: { message?: string };
+        };
+        message?: string;
+      };
+
+      let errorMsg = "Sign in failed. Please try again.";
+
+      if (axiosError.response) {
+        errorMsg =
+          axiosError.response.data?.message ||
+          `Server error: ${axiosError.response.status}`;
+      } else if (axiosError.message) {
+        errorMsg = axiosError.message;
+      }
+
+      Alert.alert("Sign In Failed", errorMsg);
     } finally {
       setLoading(false);
     }

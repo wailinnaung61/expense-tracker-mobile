@@ -1,7 +1,7 @@
 import { STORAGE_KEYS } from "@/lib/api";
+import { storage } from "@/lib/storage";
 import { authService } from "@/services/auth.service";
 import { AuthTokens, User } from "@/types/api.types";
-import * as SecureStore from "expo-secure-store";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface AuthContextType {
@@ -24,20 +24,33 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 async function storeTokens(tokens: AuthTokens, username?: string) {
-  await Promise.all([
-    SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken),
-    SecureStore.setItemAsync(STORAGE_KEYS.ID_TOKEN, tokens.idToken),
-    SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken),
-    username
-      ? SecureStore.setItemAsync(STORAGE_KEYS.USERNAME, username)
-      : Promise.resolve(),
-  ]);
+  try {
+    await Promise.all([
+      storage.setItem(STORAGE_KEYS.ACCESS_TOKEN, tokens.accessToken),
+      storage.setItem(STORAGE_KEYS.ID_TOKEN, tokens.idToken),
+      storage.setItem(STORAGE_KEYS.REFRESH_TOKEN, tokens.refreshToken),
+      username
+        ? storage.setItem(STORAGE_KEYS.USERNAME, username)
+        : Promise.resolve(),
+    ]);
+  } catch (error) {
+    console.error("Failed to store tokens:", error);
+    throw error;
+  }
 }
 
 async function clearTokens() {
-  await Promise.all(
-    Object.values(STORAGE_KEYS).map((k) => SecureStore.deleteItemAsync(k)),
-  );
+  try {
+    await Promise.all(
+      Object.values(STORAGE_KEYS).map((k) =>
+        storage.deleteItem(k).catch((err) => {
+          console.warn(`Failed to delete ${k}:`, err);
+        }),
+      ),
+    );
+  } catch (error) {
+    console.error("Failed to clear tokens:", error);
+  }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -47,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const token = await SecureStore.getItemAsync(STORAGE_KEYS.ACCESS_TOKEN);
+        const token = await storage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
         if (token) {
           const userData = await authService.getMe();
           setUser(userData);
