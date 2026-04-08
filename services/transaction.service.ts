@@ -6,6 +6,22 @@ import {
     Transaction,
     TransactionType,
 } from "@/types/api.types";
+import { AxiosError } from "axios";
+
+async function requestWithPathFallback<T>(
+  primary: () => Promise<T>,
+  fallback: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await primary();
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    if (axiosError.response?.status === 404) {
+      return fallback();
+    }
+    throw error;
+  }
+}
 
 export const transactionService = {
   getTransactions: (params?: {
@@ -18,20 +34,35 @@ export const transactionService = {
     pageNumber?: number;
     pageSize?: number;
   }): Promise<PaginatedResponse<Transaction>> =>
-    api.get("/tranaction", { params }).then((r) => r.data),
+    requestWithPathFallback(
+      () => api.get("/api/transactions", { params }).then((r) => r.data),
+      () => api.get("/api/tranaction", { params }).then((r) => r.data),
+    ),
 
   getTransactionById: (id: string): Promise<Transaction> =>
-    api.get(`/tranaction/${id}`).then((r) => r.data),
+    requestWithPathFallback(
+      () => api.get(`/api/transactions/${id}`).then((r) => r.data),
+      () => api.get(`/api/tranaction/${id}`).then((r) => r.data),
+    ),
 
   createTransaction: (data: CreateTransactionPayload): Promise<Transaction> =>
-    api.post("/tranaction/create", data).then((r) => r.data),
+    requestWithPathFallback(
+      () => api.post("/api/transactions/create", data).then((r) => r.data),
+      () => api.post("/api/tranaction/create", data).then((r) => r.data),
+    ),
 
   updateTransaction: (
     id: string,
     data: CreateTransactionPayload,
   ): Promise<Transaction> =>
-    api.put(`/tranaction/${id}`, data).then((r) => r.data),
+    requestWithPathFallback(
+      () => api.put(`/api/transactions/${id}`, data).then((r) => r.data),
+      () => api.put(`/api/tranaction/${id}`, data).then((r) => r.data),
+    ),
 
   deleteTransaction: (id: string): Promise<void> =>
-    api.delete(`/tranaction/${id}`).then((r) => r.data),
+    requestWithPathFallback(
+      () => api.delete(`/api/transactions/${id}`).then((r) => r.data),
+      () => api.delete(`/api/tranaction/${id}`).then((r) => r.data),
+    ),
 };

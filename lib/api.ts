@@ -7,6 +7,7 @@ export const STORAGE_KEYS = {
   ID_TOKEN: "et_id_token",
   REFRESH_TOKEN: "et_refresh_token",
   USERNAME: "et_username",
+  LANGUAGE: "et_language", // Add language storage key
 };
 
 const api = axios.create({
@@ -15,16 +16,27 @@ const api = axios.create({
   timeout: 30000,
 });
 
-// ── Request interceptor: attach Bearer token ──────────────────────────────────
+// ── Request interceptor: attach Bearer token & Accept-Language ───────────────
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     console.log(
       `📡 API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`,
     );
+    
+    // Attach access token
     const token = await storage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Attach language header for backend localization
+    const language = await storage.getItem(STORAGE_KEYS.LANGUAGE);
+    if (language) {
+      config.headers['Accept-Language'] = language;
+    } else {
+      config.headers['Accept-Language'] = 'en'; // Default to English
+    }
+    
     return config;
   },
   (error) => {
@@ -74,7 +86,7 @@ api.interceptors.response.use(
 
         if (!refreshToken || !username) throw new Error("No credentials");
 
-        const { data } = await axios.post(`${API_BASE_URL}/Auth/refresh`, {
+        const { data } = await axios.post(`${API_BASE_URL}/api/Auth/refresh`, {
           refreshToken,
           username,
         });

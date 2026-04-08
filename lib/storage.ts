@@ -28,4 +28,8 @@ export const storage = {
     }
     await SecureStore.deleteItemAsync(key);
   },
+
+  async removeItem(key: string): Promise<void> {
+    return this.deleteItem(key);
+  },
 };

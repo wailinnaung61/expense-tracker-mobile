@@ -1,18 +1,23 @@
 import { Ionicons } from "@expo/vector-icons";
-import { addMonths, format, subMonths } from "date-fns";
+import { addMonths, format, parseISO, subMonths } from "date-fns";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    Dimensions,
-    RefreshControl,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Svg, { G, Line, Rect, Text as SvgText } from "react-native-svg";
 
+import {
+  InsightCard,
+  SpendingTrend,
+  TopCategoryCard,
+} from "@/components/insights";
 import { LoadingView } from "@/components/loading-view";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/context/auth.context";
@@ -68,6 +73,67 @@ export default function AnalyticsScreen() {
   const totalIncome = monthAgg?.income ?? 0;
   const savingsRate =
     totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0;
+
+  // Generate insights
+  const insights: Array<{
+    type: "warning" | "success" | "info";
+    title: string;
+    message: string;
+  }> = [];
+
+  if (savingsRate >= 30) {
+    insights.push({
+      type: "success",
+      title: "Excellent Savings!",
+      message: `You're saving ${savingsRate.toFixed(0)}% of your income - well above the 20% goal!`,
+    });
+  } else if (savingsRate < 10 && totalIncome > 0) {
+    insights.push({
+      type: "warning",
+      title: "Low Savings Rate",
+      message: `Only ${savingsRate.toFixed(0)}% saved this month. Try to aim for at least 20%.`,
+    });
+  }
+
+  if (trend.length >= 2) {
+    const thisMonth = trend[trend.length - 1]?.expense ?? 0;
+    const lastMonth = trend[trend.length - 2]?.expense ?? 0;
+    const changePercent =
+      lastMonth > 0 ? ((thisMonth - lastMonth) / lastMonth) * 100 : 0;
+
+    if (changePercent > 20) {
+      insights.push({
+        type: "warning",
+        title: "Spending Increased",
+        message: `Your spending is up ${changePercent.toFixed(0)}% compared to last month.`,
+      });
+    } else if (changePercent < -15) {
+      insights.push({
+        type: "success",
+        title: "Great Progress!",
+        message: `You reduced spending by ${Math.abs(changePercent).toFixed(0)}% this month!`,
+      });
+    }
+  }
+
+  // Add category-specific insights
+  const topCategory = catAgg[0];
+  if (topCategory && totalExpense > 0) {
+    const topPercent = topCategory.percentage;
+    if (topPercent > 50) {
+      insights.push({
+        type: "info",
+        title: "Top Spending Category",
+        message: `${topCategory.categoryName} accounts for ${topPercent.toFixed(0)}% of your spending.`,
+      });
+    }
+  }
+
+  // Monthly spending trend data
+  const monthlyTrendData = trend.map((t) => ({
+    month: format(parseISO(t.period), "MMM"),
+    amount: t.expense,
+  }));
 
   if (loading) return <LoadingView fullScreen />;
 
@@ -204,6 +270,52 @@ export default function AnalyticsScreen() {
                 : "Aim for 20%+ savings rate"}
             </Text>
           </View>
+
+          {/* AI Insights */}
+          {insights.length > 0 && (
+            <>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>
+                💡 Insights
+              </Text>
+              {insights.map((insight, idx) => (
+                <InsightCard
+                  key={idx}
+                  type={insight.type}
+                  title={insight.title}
+                  message={insight.message}
+                  colorScheme={colorScheme}
+                />
+              ))}
+            </>
+          )}
+
+          {/* Spending Trend Chart */}
+          <SpendingTrend
+            monthlyData={monthlyTrendData}
+            colorScheme={colorScheme}
+            currency={currency}
+          />
+
+          {/* Top Spending Categories */}
+          {catAgg.length > 0 && (
+            <>
+              <Text style={[styles.sectionTitle, { color: C.text }]}>
+                Top Categories This Month
+              </Text>
+              {catAgg.slice(0, 5).map((cat) => (
+                <TopCategoryCard
+                  key={cat.categoryId}
+                  name={cat.categoryName}
+                  icon={cat.categoryIcon ?? "📁"}
+                  amount={cat.total}
+                  percentage={cat.percentage}
+                  color={cat.categoryColor ?? "#3B82F6"}
+                  colorScheme={colorScheme}
+                  currency={currency}
+                />
+              ))}
+            </>
+          )}
 
           {/* 6-month trend chart */}
           {trend.length > 0 && (
@@ -367,6 +479,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   body: { padding: 16 },
+  sectionTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    marginTop: 8,
+    marginBottom: 12,
+  },
   summaryRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
   summaryItem: {
     flex: 1,

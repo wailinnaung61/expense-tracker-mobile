@@ -4,17 +4,19 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  Dimensions,
-  RefreshControl,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    RefreshControl,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
+import { FloatingActionButton } from "@/components/floating-action-button";
 import { LoadingView } from "@/components/loading-view";
+import { QuickAddTransaction } from "@/components/quick-add-transaction";
 import { TransactionCard } from "@/components/transaction-card";
 import { Colors } from "@/constants/theme";
 import { useAuth } from "@/context/auth.context";
@@ -57,6 +59,7 @@ export default function DashboardScreen() {
   const [recentTx, setRecentTx] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [quickAddVisible, setQuickAddVisible] = useState(false);
 
   const currentMonth = format(new Date(), "yyyy-MM");
 
@@ -299,24 +302,18 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
+      {/* Quick Add Modal */}
+      <QuickAddTransaction
+        visible={quickAddVisible}
+        onClose={() => setQuickAddVisible(false)}
+        onSuccess={() => {
+          load();
+          setQuickAddVisible(false);
+        }}
+      />
+
       {/* FAB */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() =>
-          router.push({
-            pathname: "/transaction/create",
-            params: { type: "Expense" },
-          })
-        }
-        activeOpacity={0.85}
-      >
-        <LinearGradient
-          colors={["#7C3AED", "#4F46E5"]}
-          style={styles.fabGradient}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </LinearGradient>
-      </TouchableOpacity>
+      <FloatingActionButton onPress={() => setQuickAddVisible(true)} />
     </SafeAreaView>
   );
 }
@@ -417,22 +414,4 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   emptyCard: { borderRadius: 16, padding: 32, alignItems: "center" },
-  fab: {
-    position: "absolute",
-    right: 20,
-    bottom: 20,
-    borderRadius: 28,
-    elevation: 8,
-    shadowColor: "#7C3AED",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-  },
-  fabGradient: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
 });

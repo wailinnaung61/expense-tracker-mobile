@@ -8,14 +8,13 @@ import React, { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    KeyboardAvoidingView,
-    Platform,
+    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 
 export default function ResetPasswordScreen() {
@@ -64,13 +63,11 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: C.background }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.background }}>
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <LinearGradient colors={["#7C3AED", "#4F46E5"]} style={styles.header}>
           <TouchableOpacity
@@ -163,12 +160,12 @@ export default function ResetPasswordScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1 },
+  container: { flexGrow: 1, paddingBottom: 40 },
   header: {
     paddingTop: 60,
     paddingBottom: 40,

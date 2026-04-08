@@ -8,14 +8,13 @@ import React, { useState } from "react";
 import {
     ActivityIndicator,
     Alert,
-    KeyboardAvoidingView,
-    Platform,
+    SafeAreaView,
     ScrollView,
     StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from "react-native";
 
 export default function SignInScreen() {
@@ -68,10 +67,7 @@ export default function SignInScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: C.background }}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.background }}>
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
@@ -79,7 +75,9 @@ export default function SignInScreen() {
       >
         {/* Header Gradient */}
         <LinearGradient
-          colors={["#7C3AED", "#4F46E5"]}
+          colors={["#0EA5E9", "#06B6D4", "#14B8A6"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
           style={styles.headerGradient}
         >
           <View style={styles.logoContainer}>
@@ -185,7 +183,9 @@ export default function SignInScreen() {
             activeOpacity={0.85}
           >
             <LinearGradient
-              colors={["#7C3AED", "#4F46E5"]}
+              colors={["#0EA5E9", "#06B6D4"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
               style={styles.submitBtn}
             >
               {loading ? (
@@ -208,12 +208,12 @@ export default function SignInScreen() {
           </View>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1 },
+  container: { flexGrow: 1, paddingBottom: 40 },
   headerGradient: { paddingTop: 70, paddingBottom: 50, alignItems: "center" },
   logoContainer: { alignItems: "center" },
   logoCircle: {

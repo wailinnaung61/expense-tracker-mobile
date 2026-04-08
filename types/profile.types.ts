@@ -1,0 +1,57 @@
+export interface NotificationPreferences {
+  budgetAlerts: boolean;
+  recurringPayments: boolean;
+  autoPayments: boolean;
+  savingGoals: boolean;
+  largeTransactions: boolean;
+  paymentFailures: boolean;
+  exports: boolean;
+}
+
+export interface ProfileResponse {
+  userId: string;
+  userName: string;
+  email: string;
+  phoneNumber: string | null;
+  currency: string;
+  locale: string; // Notification language ONLY (emails/push) - NOT app UI language
+  dailyLimit: number;
+  roleId: string;
+  status: string;
+  mfaEnabled: boolean;
+  mfaMethod: string | null;
+  notificationPreferences: NotificationPreferences;
+  createdAt: string;
+  updatedAt: string | null;
+  lastLoginAt: string | null;
+}
+
+export interface UpdateProfileRequest {
+  phoneNumber?: string | null;
+  currency?: string;
+  locale?: string; // Notification language ONLY (emails/push) - NOT app UI language
+  dailyLimit?: number;
+  notificationPreferences?: NotificationPreferences;
+}
+
+// Supported currencies
+export const SUPPORTED_CURRENCIES = [
+  { code: "JPY", name: "Japanese Yen", symbol: "¥" },
+  { code: "USD", name: "US Dollar", symbol: "$" },
+  { code: "EUR", name: "Euro", symbol: "€" },
+  { code: "GBP", name: "British Pound", symbol: "£" },
+  { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
+  { code: "THB", name: "Thai Baht", symbol: "฿" },
+  { code: "MMK", name: "Myanmar Kyat", symbol: "K" },
+] as const;
+
+export type CurrencyCode = (typeof SUPPORTED_CURRENCIES)[number]["code"];
+
+// Supported locales for notifications (backend setting)
+export const SUPPORTED_LOCALES = [
+  { code: "en", name: "English" },
+  { code: "ja", name: "日本語 (Japanese)" },
+  { code: "my", name: "မြန်မာ (Myanmar)" },
+] as const;
+
+export type LocaleCode = (typeof SUPPORTED_LOCALES)[number]["code"];
